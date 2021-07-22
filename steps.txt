@@ -1,0 +1,90 @@
+Let's start building a honey pot from scratch using raspberry pi
+
+Take an SD card with minimum 4 GB of size (recommended minimum 16 GB) and insert it using an adapter to any computer/laptop
+Go to https://www.raspberrypi.org/software/ and download the "Pi Imager" for your Operating System.
+After running the Pi Imager make sure you select the preferred OS, I recommend the basic complete install. 
+After you select the OS and the memory card, Press "Ctrl+Shift+X" for additional settings.
+You can select the Wireless network you want the pi to connect to and also remember enable SSH, and enter your preferred passcode
+Make sure you note down the "hostname" somewhere as it is useful to ssh for first time.
+Click "Save" and Write the OSimage tothe memory card.
+Once everything is done, take out the memory card from the adapter and place it carefull in the Raspberry Pi.
+Plug the Pi to the power supply and wait for atleast 10 min.
+Make sure your laptop is connected to the same network as the Pi and open the terminal/command prompt and type the following
+
+> ssh pi@<hostname as in the Pi Imager>
+(type "yes" and the password as prompted)
+
+If you get the command prompt as the Raspberry Pi, you've successfully ssh-ed into the Pi.
+If you get any error, try
+
+> ping raspberrypi.local
+
+If you get a response, note the ip and try ssh-ing into the pi with the ip address
+If you do not get a response, either the raspberry pi is not completely booted or there is some error,
+Wait for some time and try ssh-ing again, if you still get an error, restart from the OS imaging process.
+
+Once you get the Raspberry Pi command line, follow these steps.
+
+$ ifconfig (note the ip, as everytime you connect to the same home network, ip does not change)
+
+(changing the mac address)
+$ sudo apt install macchanger
+$ macchanger -m XX:XX:XX:XX:XX:XX
+(if the above steps donot work)
+$ sudo nano /boot/cmdline.txt
+(add the following in the end of the file)
+. . . smsc95xx.macaddr=XX:XX:XX:XX:XX:XX
+$ sudo reboot now (to apply the changes)
+
+(Pre-Requisites and Open-Canary software)
+$ sudo apt-get install git python-virtualenv python-pip python-dev libssl-dev libffi-dev
+$ virtualenv -p python3 venv
+$ source venv/bin/activate
+$ pip install –upgrade pip setuptools
+
+(Cloning and installing the opencanary)
+$ git clone https://github.com/thinkst/opencanary
+$ cd opencanary
+$ sudo python setup.py install
+(additional commands)
+$ sudo link /usr/local/bin/twistd /home/pi/venv/bin/twistd
+$ sudo link /usr/local/bin/twistd /home/pi/opencanary/bin/twistd
+$ cp /home/pi/opencanary/build/scripts-3.7(or 2.7)/opencanary.tac /home/pi/venv/bin/opencanary.tac
+$ sudo cp ./build/scripts-3.7(or 2.7)/opencanary.tac /usr/local/bin/opencanary.tac
+
+(Configuration)
+$ sudo nano /home/pi/opencanary/opencanary.conf
+(copy the opencanary.conf from the repository files)
+$ opencanaryd --dev
+
+(Autostart the service at boot)
+$ sudo nano /etc/systemd/system/opencanary.service
+(copy the code from opencanary.service in repo files)
+(change the paths if you've saved them in different directories)
+$ sudo systemctl enable opencanary.service
+$ sudo systemctl start opencanary.service
+$ systemctl status opencanary.service
+$ sudo reboot now
+(check whether the service is running)
+$ systemctl status opencanary.service
+$ sudo chmod 666 /var/tmp/opencanary-tmp.log
+
+(send data to mail and visualize)
+$ mkdir /home/pi/opencanary/logtool
+$ nano /home/pi/opencanary/logtool/log-reader.py
+(copy the code from log-reader.py in repo files to send mail)
+$ crontab -e
+(select 1 (nano) when prompted)
+(then at the end of the file add the line)
+* * * * * python /home/pi/opencanary/logtool/log-reader.py
+$ sudo reboot now
+
+(if everything went without any major errors, your honey pot is ready.)
+
+NOTE: if the Raspberry Pi gets shutdown in any abnormal way, the opencanary is rebooted automtically, 
+      if the opencanary is not running, remove the file /home/pi/opencanary/twistd.pid and reboot the Pi.
+      
+      
+      
+      
+
